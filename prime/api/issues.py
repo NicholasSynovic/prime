@@ -10,7 +10,7 @@ from operator import itemgetter
 from string import Template
 
 import pandas as pd
-from pandas import DataFrame
+from pandas import DataFrame, Timestamp
 from requests import Response
 
 from prime.api import VALID_RESPONSE_CODE
@@ -181,13 +181,20 @@ class GitHubIssues:
             }
         )
 
-        issue_data["created_at"] = pd.to_datetime(
-            issue_data["created_at"],
-            utc=True,
-        )
-        issue_data["closed_at"] = pd.to_datetime(
-            issue_data["closed_at"],
-            utc=True,
-        )
+        try:
+            issue_data["created_at"] = pd.to_datetime(
+                issue_data["created_at"],
+                utc=True,
+            )
+        except KeyError:
+            issue_data["created_at"] = Timestamp(year=0, month=1, day=1)
+
+        try:
+            issue_data["closed_at"] = pd.to_datetime(
+                issue_data["closed_at"],
+                utc=True,
+            )
+        except KeyError:
+            issue_data["closed_at"] = Timestamp(year=0, month=1, day=1)
 
         return (issue_data, cursor, has_next_page)
