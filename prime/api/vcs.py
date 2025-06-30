@@ -164,6 +164,11 @@ class Git(VersionControlSystem):
 
         """
         super().__init__(repo_path=repo_path)
+        self.repo.config_writer(config_level="repository").set_value(
+            "core",
+            "symlinks",
+            "false",
+        )
 
     def _initialize_repo(self) -> Repo:
         """
