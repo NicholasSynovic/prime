@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
-from pandas import DataFrame, IntervalIndex, Timestamp
+from pandas import DataFrame
 from progress.bar import Bar
 
 from prime.api.db import DB
@@ -48,30 +48,51 @@ from prime.api.vcs import VersionControlSystem, identify_vcs, parse_vcs
 from prime.cli import CLI, get_first_namespace_key
 
 
-def handle_db(namespace: dict[str, Any], namespace_key: str) -> DB | None:
+def handle_db(namespace: dict[str, Any], namespace_key: str) -> DB:
+    """
+    Handle a namespace key to retrieve a database object.
+
+    This function retrieves a database object based on the provided namespace key.
+    It handles various key paths within the namespace, returning the appropriate DB
+    object or `None` if the key is not found or if the shape of the input is
+    incompatible.
+
+    Args:
+        namespace (dict[str, Any]): A dictionary containing the namespace data.
+        namespace_key (str): The key representing the namespace path.
+
+    Returns:
+        DB : The retrieved database object, or `None` if the key is not
+            found or if the shape is incompatible.
+
+    """
+    db: DB = DB()
+
     match namespace_key:
         case "vcs":
-            return DB(db_path=namespace["vcs.output"])
+            db = DB(db_path=namespace["vcs.output"])
         case "filesize":
-            return DB(db_path=namespace["filesize.output"])
+            db = DB(db_path=namespace["filesize.output"])
         case "project_size":
-            return DB(db_path=namespace["project_size.output"])
+            db = DB(db_path=namespace["project_size.output"])
         case "project_productivity":
-            return DB(db_path=namespace["project_productivity.output"])
+            db = DB(db_path=namespace["project_productivity.output"])
         case "bus_factor":
-            return DB(db_path=namespace["bus_factor.output"])
+            db = DB(db_path=namespace["bus_factor.output"])
         case "issues":
-            return DB(db_path=namespace["issues.output"])
+            db = DB(db_path=namespace["issues.output"])
         case "issue_spoilage":
-            return DB(db_path=namespace["issue_spoilage.output"])
+            db = DB(db_path=namespace["issue_spoilage.output"])
         case "issue_density":
-            return DB(db_path=namespace["issue_density.output"])
+            db = DB(db_path=namespace["issue_density.output"])
         case "pull_requests":
-            return DB(db_path=namespace["pull_requests.output"])
+            db = DB(db_path=namespace["pull_requests.output"])
         case "pull_request_spoilage":
-            return DB(db_path=namespace["pull_requests_spoilage.output"])
+            db = DB(db_path=namespace["pull_requests_spoilage.output"])
         case _:
-            return None
+            db = None
+
+    return db
 
 
 def handle_vcs(namespace: dict[str, Any], db: DB) -> bool:
@@ -126,12 +147,31 @@ def handle_vcs(namespace: dict[str, Any], db: DB) -> bool:
 
 
 def handle_metric(metric: Metric) -> None:
+    """
+    Process a Metric object, performing preprocessing, computation, and writing.
+
+    Args:
+        metric (Metric): The Metric object to be processed.
+
+    """
     metric.preprocess()
     metric.compute()
     metric.write()
 
 
-def handle_filesize_per_commit(repo_path: Path, db: DB) -> None | bool:
+def handle_filesize_per_commit(repo_path: Path, db: DB) -> bool:
+    """
+    Process a FileSizePerCommit object to compute the size of each file per commit.
+
+    Args:
+        repo_path (Path): The path to the repository.
+        db (DB): The Database object.
+
+    Returns:
+        bool: Returns False if the version control system could not be
+            identified.
+
+    """
     # Instantiate VCS class
     vcs: VersionControlSystem | int = identify_vcs(repo_path=repo_path)
     if isinstance(vcs, int):
@@ -143,9 +183,18 @@ def handle_filesize_per_commit(repo_path: Path, db: DB) -> None | bool:
     # Compute size of each file per commit
     metric: FileSizePerCommit = FileSizePerCommit(vcs=vcs, scc=scc, db=db)
     handle_metric(metric=metric)
+    return True
 
 
 def handle_issues(namespace: dict[str, Any], db: DB) -> None:
+    """
+    Process a GitHub Issues Requests object, retrieving and storing data.
+
+    Args:
+        namespace (dict[str, Any]): Command line args.
+        db (DB): The Database object.
+
+    """
     # TODO: Create a GH Pull Request Class in an dvcs.py file
     data: list[DataFrame] = []
 
@@ -191,6 +240,15 @@ def handle_issues(namespace: dict[str, Any], db: DB) -> None:
 
 
 def handle_pull_requests(namespace: dict[str, Any], db: DB) -> None:
+    """
+    Process a GitHub Pull Requests object, retrieving and storing pull request data.
+
+    Args:
+        namespace (dict[str, Any]): The namespace dictionary containing GitHub
+            credentials and API keys.
+        db (DB): The database object for storing retrieved data.
+
+    """
     # TODO: Create a GH Pull Request Class in an dvcs.py file
     data: list[DataFrame] = []
 
@@ -237,7 +295,7 @@ def handle_pull_requests(namespace: dict[str, Any], db: DB) -> None:
     db.write_df(df=pull_requests_data, table="pull_requests", model=PullRequests)
 
 
-def main() -> None:
+def main() -> None:  # noqa: PLR0912
     """
     Execute the application based on command-line arguments.
 
