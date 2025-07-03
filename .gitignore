@@ -162,3 +162,4 @@ build-docs/*
 pyinstaller/*
 *.sqlite3
 !nicholassynovic_prime.sqlite3
+*.png
