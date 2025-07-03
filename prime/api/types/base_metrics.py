@@ -1,17 +1,9 @@
-"""
-Type checking for DataFrames.
-
-Copyright (C) 2025 Nicholas M. Synovic.
-
-"""
-
 from datetime import datetime
 
-from pandas import DataFrame, Series
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field
 
 
-class T_FileSizePerCommit(BaseModel):
+class FileSizePerCommit(BaseModel):
     language: str = Field(
         default=..., description="Identified programming language of the file"
     )
@@ -24,7 +16,7 @@ class T_FileSizePerCommit(BaseModel):
     commit_hash_id: int = Field(default=..., description="Commit hash ID from database")
 
 
-class T_ProjectSizePerDay(BaseModel):
+class ProjectSizePerDay(BaseModel):
     date: datetime = Field(default=..., description="Date of measurement")
     lines: int = Field(default=..., description="Total number of lines")
     code: int = Field(default=..., description="Total number of code lines")
@@ -33,88 +25,13 @@ class T_ProjectSizePerDay(BaseModel):
     bytes: int = Field(default=..., description="Total number of bytes")
 
 
-class T_ProjectSizePerCommit(BaseModel):
+class ProjectSizePerCommit(BaseModel):
     lines: int = Field(default=..., description="Number of lines in the project")
     code: int = Field(default=..., description="Number of lines of code")
     comments: int = Field(default=..., description="Number of lines of comments")
     blanks: int = Field(default=..., description="Number of blank lines")
     bytes: int = Field(default=..., description="Number of bytes")
     commit_hash_id: int = Field(default=..., description="Commit hash ID from database")
-
-
-class T_ProjectProductivityPerCommit(BaseModel):
-    commit_hash_id: int = Field(default=..., description="Commit hash ID from database")
-    delta_lines: int = Field(default=..., description="Change in total number of lines")
-    delta_code: int = Field(
-        default=..., description="Change in total number of code lines"
-    )
-    delta_comments: int = Field(
-        default=..., description="Change in total number of comment lines"
-    )
-    delta_blanks: int = Field(
-        default=..., description="Change in total number of blank lines"
-    )
-    delta_bytes: int = Field(default=..., description="Change in total number of bytes")
-
-
-class T_ProjectProductivityPerDay(BaseModel):
-    date: datetime = Field(default=..., description="Date of measurement")
-    delta_lines: int = Field(default=..., description="Change in total number of lines")
-    delta_code: int = Field(
-        default=..., description="Change in total number of code lines"
-    )
-    delta_comments: int = Field(
-        default=..., description="Change in total number of comment lines"
-    )
-    delta_blanks: int = Field(
-        default=..., description="Change in total number of blank lines"
-    )
-    delta_bytes: int = Field(default=..., description="Change in total number of bytes")
-
-
-class T_BusFactorPerDay(BaseModel):
-    date: datetime = Field(default=..., description="Date of measurement")
-    committer_id: int = Field(default=..., description="Committer ID")
-    delta_lines: int = Field(default=..., description="Change in total number of lines")
-    delta_code: int = Field(
-        default=..., description="Change in total number of code lines"
-    )
-    delta_comments: int = Field(
-        default=..., description="Change in total number of comment lines"
-    )
-    delta_blanks: int = Field(
-        default=..., description="Change in total number of blank lines"
-    )
-    delta_bytes: int = Field(default=..., description="Change in total number of bytes")
-
-
-class T_IssueSpoilagePerDay(BaseModel):
-    start: datetime = Field(default=..., description="Starting datetime")
-    end: datetime = Field(default=..., description="Ending datetime")
-    open_events: int = Field(
-        default=..., description="Number of open issues in the period"
-    )
-
-
-class T_PullRequestSpoilagePerDay(BaseModel):
-    start: datetime = Field(default=..., description="Starting datetime")
-    end: datetime = Field(default=..., description="Ending datetime")
-    open_events: int = Field(
-        default=..., description="Number of open pull requests in the period"
-    )
-
-
-class T_IssueDensityPerDay(BaseModel):
-    start: datetime = Field(default=..., description="Starting datetime")
-    end: datetime = Field(default=..., description="Ending datetime")
-    open_events: int = Field(
-        default=..., description="Number of open issues in the period"
-    )
-    lines: int = Field(default=..., description="Total number of lines")
-    code: int = Field(default=..., description="Total number of code lines")
-    comments: int = Field(default=..., description="Total number of comment lines")
-    blanks: int = Field(default=..., description="Total number of blank lines")
-    bytes: int = Field(default=..., description="Total number of bytes")
 
 
 class CommitHashes(BaseModel):
@@ -314,34 +231,3 @@ class PullRequests(BaseModel):
     closed_at: datetime = Field(
         default=..., description="Datetime when an pull request was closed"
     )
-
-
-def validate_df(model: type[BaseModel], df: DataFrame) -> None:
-    """
-    Validate each row in a DataFrame against a Pydantic model.
-
-    Args:
-        model (type[BaseModel]): The Pydantic model class to validate against.
-        df (DataFrame): The DataFrame to validate.
-
-    """
-
-    def _run(data: Series) -> None:
-        """
-        Instantiate a Pydantic model from a Pandas Series row.
-
-        Converts the Series to a dictionary and validates it using the Pydantic model.
-        Raises a ValidationError if the data does not conform to the model schema.
-
-        Args:
-            data (Series): A row from a DataFrame containing fields matching the
-                Pydantic model.
-
-        """
-        row: dict = data.to_dict()
-        try:
-            model(**row)
-        except ValidationError as ve:
-            raise ve
-
-    df.apply(_run, axis=1)

@@ -21,9 +21,9 @@ from pandas import (
 from pandas.core.groupby import DataFrameGroupBy
 from progress.bar import Bar
 
-import prime.api.types as prime_types
 from prime.api.db import DB
 from prime.api.size import SCC
+from prime.api.types import base_metrics, derived_metrics, validate_df
 from prime.api.vcs import VersionControlSystem
 
 
@@ -105,7 +105,7 @@ class FileSizePerCommit(Metric):
         """Preprocess the data by reading from the database."""
         self.input_data = self.db.read_table(
             table="commit_hashes",
-            model=prime_types.CommitHashes,
+            model=base_metrics.CommitHashes,
         )
 
     def compute(self) -> None:
@@ -140,7 +140,7 @@ class FileSizePerCommit(Metric):
         self.db.write_df(
             df=self.computed_data,
             table="file_size_per_commit",
-            model=prime_types.T_FileSizePerCommit,
+            model=base_metrics.FileSizePerCommit,
         )
 
 
@@ -168,7 +168,7 @@ class ProjectSizePerCommit(Metric):
         """Preprocess the data by reading from the database."""
         self.input_data = self.db.read_table(
             table="file_size_per_commit",
-            model=prime_types.T_FileSizePerCommit,
+            model=base_metrics.FileSizePerCommit,
         )
 
     def compute(self) -> None:
@@ -196,7 +196,7 @@ class ProjectSizePerCommit(Metric):
         self.db.write_df(
             df=self.computed_data,
             table="project_size_per_commit",
-            model=prime_types.T_ProjectSizePerCommit,
+            model=base_metrics.ProjectSizePerCommit,
         )
 
 
@@ -275,7 +275,7 @@ class ProjectSizePerDay(Metric):
         self.db.write_df(
             df=self.computed_data,
             table="project_size_per_day",
-            model=prime_types.T_ProjectSizePerDay,
+            model=base_metrics.ProjectSizePerDay,
         )
 
 
@@ -303,7 +303,7 @@ class ProjectProductivityPerCommit(Metric):
         """Preprocess the data by reading from the database."""
         self.input_data = self.db.read_table(
             table="project_size_per_commit",
-            model=prime_types.T_ProjectSizePerCommit,
+            model=base_metrics.ProjectSizePerCommit,
         )
 
     def compute(self) -> None:
@@ -319,7 +319,7 @@ class ProjectProductivityPerCommit(Metric):
         self.db.write_df(
             df=self.computed_data,
             table="project_productivity_per_commit",
-            model=prime_types.T_ProjectProductivityPerCommit,
+            model=derived_metrics.ProjectProductivityPerCommit,
         )
 
 
@@ -400,7 +400,7 @@ class ProjectProductivityPerDay(Metric):
         self.db.write_df(
             df=self.computed_data,
             table="project_productivity_per_day",
-            model=prime_types.T_ProjectProductivityPerDay,
+            model=derived_metrics.ProjectProductivityPerDay,
         )
 
 
@@ -491,7 +491,7 @@ class BusFactorPerDay(Metric):
         self.db.write_df(
             df=self.computed_data,
             table="bus_factor_per_day",
-            model=prime_types.T_BusFactorPerDay,
+            model=derived_metrics.BusFactorPerDay,
         )
 
 
@@ -528,19 +528,20 @@ class SpoilagePerDay(Metric):
             closed="both",
         )
 
-        self.input_model: type[prime_types.Issues | prime_types.PullRequests]
+        self.input_model: type[base_metrics.Issues | base_metrics.PullRequests]
         self.output_model: type[
-            prime_types.T_IssueSpoilagePerDay | prime_types.T_PullRequestSpoilagePerDay
+            derived_metrics.IssueSpoilagePerDay
+            | derived_metrics.PullRequestSpoilagePerDay
         ]
         if self.input_table_name == "issues":
             self.output_table_name = "issue_spoilage_per_day"
-            self.input_model = prime_types.Issues
-            self.output_model = prime_types.T_IssueSpoilagePerDay
+            self.input_model = base_metrics.Issues
+            self.output_model = derived_metrics.IssueSpoilagePerDay
 
         else:
             self.output_table_name = "pull_request_spoilage_per_day"
-            self.input_model = prime_types.PullRequests
-            self.output_model = prime_types.T_PullRequestSpoilagePerDay
+            self.input_model = base_metrics.PullRequests
+            self.output_model = derived_metrics.PullRequestSpoilagePerDay
 
     def preprocess(self) -> None:
         """Preprocess the data by reading from the database."""
@@ -652,7 +653,7 @@ class IssueDensityPerDay(Metric):
         # Get issue spoilage per day
         data = self.db.read_table(
             table="issue_spoilage_per_day",
-            model=prime_types.T_IssueSpoilagePerDay,
+            model=derived_metrics.IssueSpoilagePerDay,
         )
 
         # Set values to be Timestamps
@@ -664,7 +665,7 @@ class IssueDensityPerDay(Metric):
         # Get project size per day
         data: DataFrame = self.db.read_table(
             table="project_size_per_day",
-            model=prime_types.T_ProjectSizePerDay,
+            model=base_metrics.ProjectSizePerDay,
         )
 
         data = data.rename(columns={"date": "start"})
@@ -687,5 +688,5 @@ class IssueDensityPerDay(Metric):
         self.db.write_df(
             df=self.computed_data,
             table="issue_density_per_day",
-            model=prime_types.T_IssueDensityPerDay,
+            model=derived_metrics.IssueDensityPerDay,
         )

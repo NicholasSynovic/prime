@@ -29,17 +29,7 @@ from prime.api.metrics import (
 )
 from prime.api.pull_requests import GitHubPullRequests
 from prime.api.size import SCC
-from prime.api.types import (
-    Authors,
-    CommitHashes,
-    CommitLog,
-    Committers,
-    IssueIDs,
-    Issues,
-    PullRequestIDs,
-    PullRequests,
-    Releases,
-)
+from prime.api.types import base_metrics
 from prime.api.utils import (
     copy_dataframe_columns_to_dataframe,
     replace_dataframe_value_column_with_index_reference,
@@ -66,8 +56,7 @@ def handle_db(namespace: dict[str, Any], namespace_key: str) -> DB:
             found or if the shape is incompatible.
 
     """
-    db: DB = DB()
-
+    db: DB
     match namespace_key:
         case "vcs":
             db = DB(db_path=namespace["vcs.output"])
@@ -116,7 +105,7 @@ def handle_vcs(namespace: dict[str, Any], db: DB) -> bool:
     # Get the commits that have already been stored
     existing_commits_df: DataFrame = db.read_table(
         table="commit_hashes",
-        model=CommitHashes,
+        model=base_metrics.CommitHashes,
     )
 
     # Identify the VCS. If invalid, return False
@@ -136,12 +125,16 @@ def handle_vcs(namespace: dict[str, Any], db: DB) -> bool:
     db.write_df(
         df=data["commit_hashes"],
         table="commit_hashes",
-        model=CommitHashes,
+        model=base_metrics.CommitHashes,
     )
-    db.write_df(df=data["authors"], table="authors", model=Authors)
-    db.write_df(df=data["committers"], table="committers", model=Committers)
-    db.write_df(df=data["commit_logs"], table="commit_logs", model=CommitLog)
-    db.write_df(df=data["releases"], table="releases", model=Releases)
+    db.write_df(df=data["authors"], table="authors", model=base_metrics.Authors)
+    db.write_df(
+        df=data["committers"], table="committers", model=base_metrics.Committers
+    )
+    db.write_df(
+        df=data["commit_logs"], table="commit_logs", model=base_metrics.CommitLog
+    )
+    db.write_df(df=data["releases"], table="releases", model=base_metrics.Releases)
 
     return True
 
@@ -235,8 +228,8 @@ def handle_issues(namespace: dict[str, Any], db: DB) -> None:
 
     issue_data = issue_data.rename(columns={"issue_id": "issue_id_key"})
 
-    db.write_df(df=issue_ids, table="issue_ids", model=IssueIDs)
-    db.write_df(df=issue_data, table="issues", model=Issues)
+    db.write_df(df=issue_ids, table="issue_ids", model=base_metrics.IssueIDs)
+    db.write_df(df=issue_data, table="issues", model=base_metrics.Issues)
 
 
 def handle_pull_requests(namespace: dict[str, Any], db: DB) -> None:
@@ -291,8 +284,12 @@ def handle_pull_requests(namespace: dict[str, Any], db: DB) -> None:
         columns={"pull_request_id": "pull_request_id_key"}
     )
 
-    db.write_df(df=pull_request_ids, table="pull_request_ids", model=PullRequestIDs)
-    db.write_df(df=pull_requests_data, table="pull_requests", model=PullRequests)
+    db.write_df(
+        df=pull_request_ids, table="pull_request_ids", model=base_metrics.PullRequestIDs
+    )
+    db.write_df(
+        df=pull_requests_data, table="pull_requests", model=base_metrics.PullRequests
+    )
 
 
 def main() -> None:  # noqa: PLR0912
