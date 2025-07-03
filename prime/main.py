@@ -1,5 +1,5 @@
 """
-Main entrypoint into the PRiMe application.
+Main entrypoint into the PRIME application.
 
 Copyright (C) 2025 Nicholas M. Synovic.
 

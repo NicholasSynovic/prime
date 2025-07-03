@@ -1,20 +1,40 @@
-from prime.api.db import DB
-from pandas import DataFrame
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-import prime.api.types as prime_types
+"""
+Temporary plotting functionality for PRIME.
+
+Copyright (C) 2025 Nicholas M. Synovic.
+
+"""
+
 from pathlib import Path
 
-def plot_size(db: DB)   ->  None:
-    df: DataFrame = db.read_table(table="project_size_per_day", model=prime_types.T_ProjectSizePerDay,)
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
+from pandas import DataFrame
+
+import prime.api.types as prime_types
+from prime.api.db import DB
+
+
+def plot_size(db: DB) -> None:
+    """
+    Plot the size per month from the database and save the plot as an image.
+
+    Args:
+        db (DB): The Database object used to read the project size data.
+
+    """
+    df: DataFrame = db.read_table(
+        table="project_size_per_day",
+        model=prime_types.T_ProjectSizePerDay,
+    )
     data: DataFrame = df[["date", "code"]].copy()
     data["date"] = data["date"].apply(func=pd.Timestamp)
     data["date"] = data["date"].dt.strftime(date_format="%Y-%m")
 
     data = data.groupby(by="date").sum(numeric_only=True)
     data = data.reset_index()
-    data["code"] = data["code"] / 1000
+    data["code"] /= 1000
 
     sns.lineplot(data=data, x="date", y="code")
     plt.title(label="Project Size per Month")
@@ -30,8 +50,19 @@ def plot_size(db: DB)   ->  None:
     plt.clf()
     plt.close()
 
-def plot_productivity(db: DB)   ->  None:
-    df: DataFrame = db.read_table(table="project_productivity_per_day", model=prime_types.T_ProjectProductivityPerDay,)
+
+def plot_productivity(db: DB) -> None:
+    """
+    Plot the productivity per month from the database and save the plot as an image.
+
+    Args:
+        db (DB): The Database object used to read the project size data.
+
+    """
+    df: DataFrame = db.read_table(
+        table="project_productivity_per_day",
+        model=prime_types.T_ProjectProductivityPerDay,
+    )
     data: DataFrame = df[["date", "delta_code"]].copy()
     data["date"] = data["date"].apply(func=pd.Timestamp)
     data["date"] = data["date"].dt.strftime(date_format="%Y-%m")
@@ -52,6 +83,7 @@ def plot_productivity(db: DB)   ->  None:
     plt.savefig("productivity.png")
     plt.clf()
     plt.close()
+
 
 db_file: Path = Path("../.temp/tqdm_tqdm.prime.sqlite3")
 db: DB = DB(db_path=db_file)

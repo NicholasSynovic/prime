@@ -28,35 +28,88 @@ from prime.api.vcs import VersionControlSystem
 
 
 class Metric(ABC):
+    """
+    Abstract base class for defining metrics.
+
+    This class should be subclassed to implement specific metrics computations.
+
+    """
+
     def __init__(self, db: DB) -> None:
+        """
+        Initialize the Metric object with a database connection and data structures.
+
+        Args:
+            db (DB): The Database object to interact with the database.
+
+        """
         self.db: DB = db
         self.input_data: DataFrame = DataFrame()
         self.computed_data: DataFrame = DataFrame()
         self.to_utc_date = lambda x: Timestamp(ts_input=x, tz="UTC").floor(freq="D")
 
     @abstractmethod
-    def compute(self) -> None: ...
+    def compute(self) -> None:
+        """
+        Compute the metric using the input data.
+
+        This method must be implemented by subclasses.
+
+        """
+        ...
 
     @abstractmethod
-    def preprocess(self) -> None: ...
+    def preprocess(self) -> None:
+        """
+        Preprocess the input data to prepare it for computation.
+
+        This method must be implemented by subclasses.
+        """
+        ...
 
     @abstractmethod
-    def write(self) -> None: ...
+    def write(self) -> None:
+        """
+        Write the computed metric data to the database.
+
+        This method must be implemented by subclasses.
+        """
+        ...
 
 
 class FileSizePerCommit(Metric):
+    """
+    A class to compute the file size per commit for a given repository.
+
+    This class extends the Metric abstract base class and implements the
+    necessary methods to compute and store the file size per commit in a
+    database.
+
+    """
+
     def __init__(self, vcs: VersionControlSystem, scc: SCC, db: DB) -> None:
+        """
+        Initialize the FileSizePerCommit object with VCS.
+
+        Args:
+            vcs (VersionControlSystem): The version control system interface.
+            scc (SCC): The source code control system interface.
+            db (DB): The database object to interact with the database.
+
+        """
         super().__init__(db=db)
         self.scc: SCC = scc
         self.vcs: VersionControlSystem = vcs
 
     def preprocess(self) -> None:
+        """Preprocess the data by reading from the database."""
         self.input_data = self.db.read_table(
             table="commit_hashes",
             model=prime_types.CommitHashes,
         )
 
     def compute(self) -> None:
+        """Compute the file size for each commit."""
         data: list[DataFrame] = []
 
         number_of_commits: int = self.input_data.shape[0]
@@ -83,6 +136,7 @@ class FileSizePerCommit(Metric):
         self.computed_data.columns = self.computed_data.columns.str.lower()
 
     def write(self) -> None:
+        """Write the computed data to the database."""
         self.db.write_df(
             df=self.computed_data,
             table="file_size_per_commit",
@@ -91,16 +145,34 @@ class FileSizePerCommit(Metric):
 
 
 class ProjectSizePerCommit(Metric):
+    """
+    A class to compute the project size per commit for a given repository.
+
+    This class extends the Metric abstract base class and implements the
+    necessary methods to compute and store the project size per commit in a
+    database.
+
+    """
+
     def __init__(self, db: DB) -> None:
+        """
+        Initialize the ProjectSizePerCommit with a database connection.
+
+        Args:
+            db (DB): The database connection object.
+
+        """
         super().__init__(db=db)
 
     def preprocess(self) -> None:
+        """Preprocess the data by reading from the database."""
         self.input_data = self.db.read_table(
             table="file_size_per_commit",
             model=prime_types.T_FileSizePerCommit,
         )
 
     def compute(self) -> None:
+        """Compute the project size for each commit."""
         # Group files by commit hash
         commit_groups: DataFrameGroupBy = self.input_data.groupby(
             by="commit_hash_id",
@@ -120,6 +192,7 @@ class ProjectSizePerCommit(Metric):
         self.computed_data = self.computed_data.reset_index(drop=True)
 
     def write(self) -> None:
+        """Write the computed project size per commit to the database."""
         self.db.write_df(
             df=self.computed_data,
             table="project_size_per_commit",
@@ -128,10 +201,27 @@ class ProjectSizePerCommit(Metric):
 
 
 class ProjectSizePerDay(Metric):
+    """
+    A class to compute the project size per day for a given repository.
+
+    This class extends the Metric abstract base class and implements the
+    necessary methods to compute and store the project size per day in a
+    database.
+
+    """
+
     def __init__(self, db: DB) -> None:
+        """
+        Initialize the ProjectSizePerDay with a database connection.
+
+        Args:
+            db (DB): The database connection object.
+
+        """
         super().__init__(db=db)
 
     def preprocess(self) -> None:
+        """Preprocess the data by reading from the database."""
         sql: str = """
         SELECT
             p.id,
@@ -158,6 +248,7 @@ class ProjectSizePerDay(Metric):
         )
 
     def compute(self) -> None:
+        """Compute the project size for each day."""
         # Get the oldest and current dates
         oldest_date: Timestamp = self.input_data["committed_datetime"][0]
         current_date: Timestamp = Timestamp.utcnow().floor(freq="D")
@@ -180,6 +271,7 @@ class ProjectSizePerDay(Metric):
         self.computed_data = self.computed_data.ffill()
 
     def write(self) -> None:
+        """Write the computed project size per day to the database."""
         self.db.write_df(
             df=self.computed_data,
             table="project_size_per_day",
@@ -188,16 +280,34 @@ class ProjectSizePerDay(Metric):
 
 
 class ProjectProductivityPerCommit(Metric):
+    """
+    A class to compute the project productivity per commit for a given repository.
+
+    This class extends the Metric abstract base class and implements the
+    necessary methods to compute and store the project productivity per commit in a
+    database.
+
+    """
+
     def __init__(self, db: DB) -> None:
+        """
+        Initialize the ProjectProductivityPerCommit with a database connection.
+
+        Args:
+            db (DB): The database connection object.
+
+        """
         super().__init__(db=db)
 
     def preprocess(self) -> None:
+        """Preprocess the data by reading from the database."""
         self.input_data = self.db.read_table(
             table="project_size_per_commit",
             model=prime_types.T_ProjectSizePerCommit,
         )
 
     def compute(self) -> None:
+        """Compute the project productivity for each commit."""
         self.computed_data = self.input_data.diff().fillna(0).abs()
         self.computed_data = self.computed_data.drop(columns="commit_hash_id")
         self.computed_data = self.computed_data.add_prefix(prefix="delta_")
@@ -205,6 +315,7 @@ class ProjectProductivityPerCommit(Metric):
         self.computed_data["commit_hash_id"] = self.input_data["commit_hash_id"]
 
     def write(self) -> None:
+        """Write the computed project productivity per commit to the database."""
         self.db.write_df(
             df=self.computed_data,
             table="project_productivity_per_commit",
@@ -213,10 +324,27 @@ class ProjectProductivityPerCommit(Metric):
 
 
 class ProjectProductivityPerDay(Metric):
+    """
+    A class to compute the project productivity per day for a given repository.
+
+    This class extends the Metric abstract base class and implements the
+    necessary methods to compute and store the project productivity per day in a
+    database.
+
+    """
+
     def __init__(self, db: DB) -> None:
+        """
+        Initialize the ProjectProductivityPerDay with a database connection.
+
+        Args:
+            db (DB): The database connection object.
+
+        """
         super().__init__(db=db)
 
     def preprocess(self) -> None:
+        """Preprocess the data by reading from the database."""
         sql: str = """
         SELECT
             p.id,
@@ -239,6 +367,7 @@ class ProjectProductivityPerDay(Metric):
         self.input_data = data
 
     def compute(self) -> None:
+        """Compute the project productivity for each day."""
         # Get the oldest and current dates
         oldest_date: Timestamp = self.input_data["committed_datetime"][0]
         current_date: Timestamp = Timestamp.utcnow().floor(freq="D")
@@ -267,6 +396,7 @@ class ProjectProductivityPerDay(Metric):
         self.computed_data = self.computed_data.fillna(value=0)
 
     def write(self) -> None:
+        """Write the computed project productivity per day to the database."""
         self.db.write_df(
             df=self.computed_data,
             table="project_productivity_per_day",
@@ -275,11 +405,28 @@ class ProjectProductivityPerDay(Metric):
 
 
 class BusFactorPerDay(Metric):
+    """
+    A class to compute the bus factor per day for a given repository.
+
+    This class extends the Metric abstract base class and implements the
+    necessary methods to compute and store the bus factor per day in a
+    database.
+
+    """
+
     def __init__(self, db: DB) -> None:
+        """
+        Initialize the BusFactorPerDay with a database connection.
+
+        Args:
+            db (DB): The database connection object.
+
+        """
         super().__init__(db=db)
         self.datum_list: list[DataFrame] = []
 
     def preprocess(self) -> None:
+        """Preprocess the data by reading from the database."""
         sql: str = """
         SELECT
             p.id,
@@ -303,6 +450,7 @@ class BusFactorPerDay(Metric):
         self.input_data = data
 
     def compute(self) -> None:
+        """Compute the bus factor for each day."""
         data_grouped_by_days: DataFrameGroupBy = self.input_data.groupby(
             by=Grouper(
                 key="committed_datetime",
@@ -314,10 +462,10 @@ class BusFactorPerDay(Metric):
             idx: Timestamp
             date_group: DataFrame
             for idx, date_group in data_grouped_by_days:
-                date_group = date_group.drop(columns="committed_datetime")
-                date_group = date_group.abs()
+                data: DataFrame = date_group.drop(columns="committed_datetime")
+                data = date_group.abs()
 
-                data_group_by_committer: DataFrameGroupBy = date_group.groupby(
+                data_group_by_committer: DataFrameGroupBy = data.groupby(
                     by="committer_id",
                 )
 
@@ -339,6 +487,7 @@ class BusFactorPerDay(Metric):
         self.computed_data = pd.concat(objs=self.datum_list, ignore_index=True)
 
     def write(self) -> None:
+        """Write the computed bus factor day to the database."""
         self.db.write_df(
             df=self.computed_data,
             table="bus_factor_per_day",
@@ -347,11 +496,29 @@ class BusFactorPerDay(Metric):
 
 
 class SpoilagePerDay(Metric):
+    """
+    A class to compute the spoilage per day for a given repository.
+
+    This class extends the Metric abstract base class and implements the
+    necessary methods to compute and store the spoilage per day in a
+    database.
+
+    """
+
     def __init__(
         self,
         db: DB,
         table_name: Literal["issues", "pull_requests"],
     ) -> None:
+        """
+        Initialize the SpoilagePerDay with a database connection and table name.
+
+        Args:
+            db (DB): The database connection object.
+            table_name (Literal["issues", "pull_requests"]): The name of the
+                table to process.
+
+        """
         super().__init__(db=db)
         self.output_table_name: str = ""
         self.input_table_name = table_name
@@ -376,6 +543,7 @@ class SpoilagePerDay(Metric):
             self.output_model = prime_types.T_PullRequestSpoilagePerDay
 
     def preprocess(self) -> None:
+        """Preprocess the data by reading from the database."""
         # Value to store temporary information
         data: DataFrame = DataFrame()
 
@@ -423,6 +591,7 @@ class SpoilagePerDay(Metric):
         self.input_data = data
 
     def compute(self) -> None:
+        """Compute the spoilage for each day."""
         # Extract left and right bounds from input intervals
         input_left = self.input_data["interval"].apply(lambda i: i.left).values
         input_right = self.input_data["interval"].apply(lambda i: i.right).values
@@ -446,6 +615,7 @@ class SpoilagePerDay(Metric):
         )
 
     def write(self) -> None:
+        """Write the computed spoilage per day to the database."""
         self.db.write_df(
             df=self.computed_data,
             table=self.output_table_name,
@@ -454,11 +624,28 @@ class SpoilagePerDay(Metric):
 
 
 class IssueDensityPerDay(Metric):
+    """
+    A class to compute the issue density per day for a given repository.
+
+    This class extends the Metric abstract base class and implements the
+    necessary methods to compute and store the issue density per day in a
+    database.
+
+    """
+
     def __init__(self, db: DB) -> None:
+        """
+        Initialize the IssueDensityPerDay with a database connection.
+
+        Args:
+            db (DB): The database connection object.
+
+        """
         super().__init__(db=db)
         self.issue_spoilage_per_day: DataFrame = DataFrame()
 
     def preprocess(self) -> None:
+        """Preprocess the data by reading from the database."""
         # Value to store temporary information
         data: DataFrame = DataFrame()
 
@@ -488,6 +675,7 @@ class IssueDensityPerDay(Metric):
         self.input_data = data
 
     def compute(self) -> None:
+        """Compute the issue density for each day."""
         self.computed_data = self.input_data.merge(
             self.issue_spoilage_per_day,
             on="start",
@@ -495,6 +683,7 @@ class IssueDensityPerDay(Metric):
         ).ffill()
 
     def write(self) -> None:
+        """Write the computed issue density per day to the database."""
         self.db.write_df(
             df=self.computed_data,
             table="issue_density_per_day",
