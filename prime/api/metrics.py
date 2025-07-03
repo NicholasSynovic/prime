@@ -23,7 +23,7 @@ from progress.bar import Bar
 
 from prime.api.db import DB
 from prime.api.size import SCC
-from prime.api.types import base_metrics, derived_metrics, validate_df
+from prime.api.types import base_metrics, derived_metrics
 from prime.api.vcs import VersionControlSystem
 
 

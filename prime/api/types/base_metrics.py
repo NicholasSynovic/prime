@@ -1,9 +1,24 @@
+"""
+Base metric types.
+
+Copyright (C) 2025 Nicholas M. Synovic.
+
+"""
+
 from datetime import datetime
 
 from pydantic import BaseModel, Field
 
 
 class FileSizePerCommit(BaseModel):
+    """
+    A model representing the size of a file per commit.
+
+    This model captures various metrics related to the size and composition
+    of a file at the time of a specific commit.
+
+    """
+
     language: str = Field(
         default=..., description="Identified programming language of the file"
     )
@@ -17,6 +32,14 @@ class FileSizePerCommit(BaseModel):
 
 
 class ProjectSizePerDay(BaseModel):
+    """
+    A model representing the project size metrics per day.
+
+    This model captures the total size and composition of a project on a
+    daily basis, including lines of code, comments, blanks, and bytes.
+
+    """
+
     date: datetime = Field(default=..., description="Date of measurement")
     lines: int = Field(default=..., description="Total number of lines")
     code: int = Field(default=..., description="Total number of code lines")
@@ -26,6 +49,14 @@ class ProjectSizePerDay(BaseModel):
 
 
 class ProjectSizePerCommit(BaseModel):
+    """
+    A model representing the project size metrics per commit.
+
+    This model captures the size and composition of a project at the time
+    of a specific commit, including lines of code, comments, blanks, and bytes.
+
+    """
+
     lines: int = Field(default=..., description="Number of lines in the project")
     code: int = Field(default=..., description="Number of lines of code")
     comments: int = Field(default=..., description="Number of lines of comments")

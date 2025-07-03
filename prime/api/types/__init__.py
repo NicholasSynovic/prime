@@ -1,3 +1,10 @@
+"""
+Type classes.
+
+Copyright (C) 2025 Nicholas M. Synovic.
+
+"""
+
 from pandas import DataFrame, Series
 from pydantic import BaseModel, ValidationError
 
