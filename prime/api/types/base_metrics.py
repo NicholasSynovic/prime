@@ -212,6 +212,7 @@ class Issues(BaseModel):
         issue_id_key (int): Index value of the related issue in the database.
         created_at (datetime): Datetime when the issue was created.
         closed_at (datetime): Datetime when the issue was closed.
+        labels (str): Stringify JSON dict of issue labels {"labels": list[str]}
 
     """
 
@@ -224,6 +225,10 @@ class Issues(BaseModel):
     )
     closed_at: datetime = Field(
         default=..., description="Datetime when an issue was closed"
+    )
+    labels: str = Field(
+        default=...,
+        description='Stringify JSON dict of issue labels {"labels": list[str]}',
     )
 
 
