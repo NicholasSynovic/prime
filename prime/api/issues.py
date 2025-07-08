@@ -6,6 +6,7 @@ Copyright (C) 2025 Nicholas M. Synovic.
 """
 
 from functools import partial
+from json import dumps
 from operator import itemgetter
 from string import Template
 
@@ -132,6 +133,13 @@ class GitHubIssues:
                                 id,
                                 createdAt,
                                 closedAt,
+                                labels(first: 100) {
+                                    edges {
+                                        node {
+                                            name,
+                                        }
+                                    }
+                                }
                             }
                         },
                         pageInfo {
@@ -172,6 +180,19 @@ class GitHubIssues:
         ]["edges"]
 
         issue_data: DataFrame = DataFrame(data=map(itemgetter("node"), nodes))
+
+        issue_data["labels"] = issue_data["labels"].apply(
+            func=lambda x: {
+                "labels": [
+                    val
+                    for sublist in x.values()
+                    for item in sublist
+                    for inner_dict in item.values()
+                    for val in inner_dict.values()
+                ]
+            }
+        )
+        issue_data["labels"] = issue_data["labels"].apply(func=dumps)
 
         issue_data = issue_data.rename(
             columns={
