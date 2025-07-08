@@ -11,6 +11,7 @@ import pandas as pd
 from pandas import DataFrame
 from pydantic import BaseModel
 from sqlalchemy import (
+    JSON,
     Column,
     DateTime,
     Engine,
@@ -188,6 +189,7 @@ class DB:
             Column("issue_id_key", Integer),
             Column("created_at", DateTime),
             Column("closed_at", DateTime),
+            Column("labels", JSON),
             ForeignKeyConstraint(
                 ["issue_id_key"],
                 ["issue_ids.id"],
