@@ -334,7 +334,7 @@ def identify_vcs(repo_path: Path) -> VersionControlSystem | int:
 
 def parse_vcs(
     vcs: VersionControlSystem,
-    previous_revisions: DataFrame | None,
+    existing_revision_hashes: DataFrame | None,
 ) -> dict[str, DataFrame]:
     """
     Parse and structure version control system data into normalized DataFrames.
@@ -348,8 +348,8 @@ def parse_vcs(
 
     Args:
         vcs (VersionControlSystem): The version control system instance to parse.
-        previous_revisions (DataFrame | None): Optional DataFrame of previously
-        processed commit hashes to exclude from the current run.
+        existing_revision_hashes (DataFrame | None): Optional DataFrame of
+            processed commit hashes to exclude from the current run.
 
     Returns:
         dict[str, DataFrame]: A dictionary of normalized DataFrames with the
@@ -369,12 +369,12 @@ def parse_vcs(
     commit_log_df: DataFrame = vcs.parse_revisions(revisions=revisions)
 
     # Remove previously stored revisions from DataFrames
-    if isinstance(previous_revisions, DataFrame):
+    if isinstance(existing_revision_hashes, DataFrame):
         commit_log_df = commit_log_df[
-            ~commit_log_df["commit_hash"].isin(previous_revisions["commit_hash"])
+            ~commit_log_df["commit_hash"].isin(existing_revision_hashes["commit_hash"])
         ]
         releases_df = releases_df[
-            ~releases_df["commit_hash_id"].isin(previous_revisions["commit_hash"])
+            ~releases_df["commit_hash_id"].isin(existing_revision_hashes["commit_hash"])
         ]
 
     # Copy static information to output data structure

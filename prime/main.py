@@ -103,7 +103,7 @@ def handle_vcs(namespace: dict[str, Any], db: DB) -> bool:
 
     """
     # Get the commits that have already been stored
-    existing_commits_df: DataFrame = db.read_table(
+    existing_revision_hashes: DataFrame = db.read_table(
         table="commit_hashes",
         model=base_metrics.CommitHashes,
     )
@@ -118,7 +118,7 @@ def handle_vcs(namespace: dict[str, Any], db: DB) -> bool:
     # Parse VCS for revisions
     data: dict[str, DataFrame] = parse_vcs(
         vcs=vcs,
-        previous_revisions=existing_commits_df,
+        existing_revision_hashes=existing_revision_hashes,
     )
 
     # Write tables
