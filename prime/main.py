@@ -211,9 +211,13 @@ def handle_issues(namespace: dict[str, Any], db: DB) -> None:
             after_cursor = f'"{resp[1]}"'
             has_next_page = resp[2]
 
-            bar.next()
+            if total_pages > 0:
+                bar.next()
 
     issue_data: DataFrame = pd.concat(objs=data, ignore_index=True)
+
+    if issue_data.empty:
+        return
 
     issue_ids: DataFrame = copy_dataframe_columns_to_dataframe(
         df=issue_data, columns=["issue_id"]

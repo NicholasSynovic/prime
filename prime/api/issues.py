@@ -181,6 +181,9 @@ class GitHubIssues:
 
         issue_data: DataFrame = DataFrame(data=map(itemgetter("node"), nodes))
 
+        if issue_data.empty:
+            return (issue_data, cursor, has_next_page)
+
         issue_data["labels"] = issue_data["labels"].apply(
             func=lambda x: {
                 "labels": [
