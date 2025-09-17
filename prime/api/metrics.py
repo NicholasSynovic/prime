@@ -463,7 +463,6 @@ class BusFactorPerDay(Metric):
             date_group: DataFrame
             for idx, date_group in data_grouped_by_days:
                 data: DataFrame = date_group.drop(columns="committed_datetime")
-                data = date_group.abs()
 
                 data_group_by_committer: DataFrameGroupBy = data.groupby(
                     by="committer_id",
