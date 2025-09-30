@@ -16,7 +16,6 @@
   - [Using PRIME](#using-prime)
     - [Install With `pip`](#install-with-pip)
     - [Install With `pipx`](#install-with-pipx)
-    - [Install with `uvx`](#install-with-uvx)
     - [Build From Source](#build-from-source)
     - [Command Line Options](#command-line-options)
       - [`prime --help`](#prime---help)
@@ -132,10 +131,6 @@ PRIME depends on the following system utilities:
 ### Install With `pipx`
 
 `pipx install "git+https://github.com/NicholasSynovic/prime.git"`
-
-### Install with `uvx`
-
-`uv --from git+https://github.com/NicholasSynovic/prime tool install prime`
 
 ### Build From Source
 
