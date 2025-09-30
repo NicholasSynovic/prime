@@ -337,6 +337,7 @@ class DB:
                 if_exists="append",
                 index=True,
                 index_label="id",
+                chunksize=1000,
             )
         except IntegrityError:
             return False
