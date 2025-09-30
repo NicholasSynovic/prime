@@ -126,11 +126,15 @@ PRIME depends on the following system utilities:
 
 ### Install With `pip`
 
-`pip install git+https://github.com/NicholasSynovic/prime.git`
+```
+pip install git+https://github.com/NicholasSynovic/prime.git
+```
 
 ### Install With `pipx`
 
-`pipx install "git+https://github.com/NicholasSynovic/prime.git"`
+```
+pipx install "git+https://github.com/NicholasSynovic/prime.git"
+```
 
 ### Build From Source
 
