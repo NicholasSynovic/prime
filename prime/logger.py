@@ -19,6 +19,7 @@ class PRIME_Logger:
             filename=self.log_file,
             encoding="utf-8",
             level=logging.DEBUG,
+            format="%(asctime)s:%(levelname)s:%(message)s",
         )
 
     def start_timing(self, message: str) -> None:

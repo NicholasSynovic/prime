@@ -6,8 +6,10 @@ Copyright (C) 2025 Nicholas M. Synovic.
 """
 
 import sys
+from json import dumps
 from math import ceil
 from pathlib import Path
+from time import time
 from typing import Any
 
 import pandas as pd
@@ -36,6 +38,7 @@ from prime.api.utils import (
 )
 from prime.api.vcs import VersionControlSystem, identify_vcs, parse_vcs
 from prime.cli import CLI, get_first_namespace_key
+from prime.logger import PRIME_Logger
 
 
 def handle_db(namespace: dict[str, Any], namespace_key: str) -> DB:
@@ -307,26 +310,43 @@ def main() -> None:  # noqa: PLR0912
         None
 
     """
+    logger: PRIME_Logger = PRIME_Logger(
+        log_file=Path(f"prime_{time()}.log").resolve(),
+        name="prime",
+    )
+    logger.logger.info(msg="Starting PRIME")
+
+    logger.logger.info("Parsing the command line interface")
     cli: CLI = CLI()
     namespace: dict[str, Any] = cli.parse_args().__dict__
+    logger.logger.debug(msg=f"CLI input: {namespace}")
+
     try:
         namespace_key: str = get_first_namespace_key(namespace=namespace)
+        logger.logger.info(msg=f"Command line subcommand: {namespace_key}")
     except KeyError:
+        logger.logger.error(msg="Invalid subcommand")
         sys.exit(1)
 
     # Connect to database
     db: DB | None = handle_db(namespace=namespace, namespace_key=namespace_key)
     if db is None:
+        logger.logger.error(msg="Unable to connect to database")
         sys.exit(2)
+    logger.logger.info(msg=f"Connected to database: {db.dbPath}")
 
     # Run subroutines based on command line parser
     match namespace_key:
         case "vcs":
             handle_vcs(namespace=namespace, db=db)
         case "filesize":
+            logger.logger.info(msg="Computing file size per commit")
             handle_filesize_per_commit(repo_path=namespace["filesize.input"], db=db)
         case "project_size":
+            logger.logger.info(msg="Computing project size per commit")
             handle_metric(metric=ProjectSizePerCommit(db=db))
+
+            logger.logger.info(msg="Computing project size per day")
             handle_metric(metric=ProjectSizePerDay(db=db))
         case "project_productivity":
             handle_metric(metric=ProjectProductivityPerCommit(db=db))
