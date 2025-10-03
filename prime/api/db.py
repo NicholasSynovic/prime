@@ -5,10 +5,12 @@ Copyright (C) 2025 Nicholas M. Synovic.
 
 """
 
+import math
 from pathlib import Path
 
 import pandas as pd
 from pandas import DataFrame
+from progress.bar import Bar
 from pydantic import BaseModel
 from sqlalchemy import (
     JSON,
@@ -306,7 +308,13 @@ class DB:
 
         self.metadata.create_all(bind=self.engine, checkfirst=True)
 
-    def write_df(self, df: DataFrame, table: str, model: type[BaseModel]) -> bool:
+    def write_df(
+        self,
+        df: DataFrame,
+        table: str,
+        model: type[BaseModel],
+        chunksize: int = 1000,
+    ) -> bool:
         """
         Write a DataFrame to a SQL table with validation against a specified model.
 
@@ -330,17 +338,19 @@ class DB:
         """
         validate_df(model=model, df=df)
 
-        try:
-            df.to_sql(
-                name=table,
-                con=self.engine,
-                if_exists="append",
-                index=True,
-                index_label="id",
-                chunksize=1000,
-            )
-        except IntegrityError:
-            return False
+        n_chunks = math.ceil(len(df) / chunksize)
+
+        with Bar("Writing to DB", max=n_chunks) as bar:
+            for start in range(0, len(df), chunksize):
+                end = start + chunksize
+                df.iloc[start:end].to_sql(
+                    name=table,
+                    con=self.engine,
+                    if_exists="append",
+                    index=True,
+                    index_label="id",
+                )
+                bar.next()
 
         return True
 
