@@ -6,7 +6,6 @@ Copyright (C) 2025 Nicholas M. Synovic.
 """
 
 import sys
-from json import dumps
 from math import ceil
 from pathlib import Path
 from time import time
@@ -39,52 +38,6 @@ from prime.api.utils import (
 from prime.api.vcs import VersionControlSystem, identify_vcs, parse_vcs
 from prime.cli import CLI, get_first_namespace_key
 from prime.logger import PRIME_Logger
-
-
-def handle_db(namespace: dict[str, Any], namespace_key: str) -> DB:
-    """
-    Handle a namespace key to retrieve a database object.
-
-    This function retrieves a database object based on the provided namespace key.
-    It handles various key paths within the namespace, returning the appropriate DB
-    object or `None` if the key is not found or if the shape of the input is
-    incompatible.
-
-    Args:
-        namespace (dict[str, Any]): A dictionary containing the namespace data.
-        namespace_key (str): The key representing the namespace path.
-
-    Returns:
-        DB : The retrieved database object, or `None` if the key is not
-            found or if the shape is incompatible.
-
-    """
-    db: DB
-    match namespace_key:
-        case "vcs":
-            db = DB(db_path=namespace["vcs.output"])
-        case "filesize":
-            db = DB(db_path=namespace["filesize.output"])
-        case "project_size":
-            db = DB(db_path=namespace["project_size.output"])
-        case "project_productivity":
-            db = DB(db_path=namespace["project_productivity.output"])
-        case "bus_factor":
-            db = DB(db_path=namespace["bus_factor.output"])
-        case "issues":
-            db = DB(db_path=namespace["issues.output"])
-        case "issue_spoilage":
-            db = DB(db_path=namespace["issue_spoilage.output"])
-        case "issue_density":
-            db = DB(db_path=namespace["issue_density.output"])
-        case "pull_requests":
-            db = DB(db_path=namespace["pull_requests.output"])
-        case "pull_request_spoilage":
-            db = DB(db_path=namespace["pull_requests_spoilage.output"])
-        case _:
-            db = None
-
-    return db
 
 
 def handle_vcs(namespace: dict[str, Any], db: DB) -> bool:
@@ -329,10 +282,7 @@ def main() -> None:  # noqa: PLR0912
         sys.exit(1)
 
     # Connect to database
-    db: DB | None = handle_db(namespace=namespace, namespace_key=namespace_key)
-    if db is None:
-        logger.logger.error(msg="Unable to connect to database")
-        sys.exit(2)
+    db: DB = DB(db_path=namespace[f"{namespace_key}.output"])
     logger.logger.info(msg=f"Connected to database: {db.dbPath}")
 
     # Run subroutines based on command line parser

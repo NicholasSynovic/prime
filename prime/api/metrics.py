@@ -25,6 +25,7 @@ from prime.api.db import DB
 from prime.api.size import SCC
 from prime.api.types import base_metrics, derived_metrics
 from prime.api.vcs import VersionControlSystem
+from prime.logger import PRIME_Logger
 
 
 class Metric(ABC):
@@ -154,7 +155,7 @@ class ProjectSizePerCommit(Metric):
 
     """
 
-    def __init__(self, db: DB) -> None:
+    def __init__(self, db: DB, logger: PRIME_Logger) -> None:
         """
         Initialize the ProjectSizePerCommit with a database connection.
 
@@ -162,14 +163,24 @@ class ProjectSizePerCommit(Metric):
             db (DB): The database connection object.
 
         """
+
+        # Setup logging
+        self.logger: PRIME_Logger = logger
+
+        # Class variables
+        self.table_name: str = "file_size_per_commit"
+
+        # Instantiate interface
         super().__init__(db=db)
 
     def preprocess(self) -> None:
         """Preprocess the data by reading from the database."""
+        self.logger.logger.info(f"Reading data from table: {self.table_name}")
         self.input_data = self.db.read_table(
             table="file_size_per_commit",
             model=base_metrics.FileSizePerCommit,
         )
+        self.logger.logger.debug(msg=f"Input data shape: {self.input_data.shape}")
 
     def compute(self) -> None:
         """Compute the project size for each commit."""
