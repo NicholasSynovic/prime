@@ -226,7 +226,7 @@ class Issues(BaseModel):
     closed_at: datetime = Field(
         default=..., description="Datetime when an issue was closed"
     )
-    labels: str = Field(
+    labels: dict = Field(
         default=...,
         description='Stringify JSON dict of issue labels {"labels": list[str]}',
     )
