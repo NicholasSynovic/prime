@@ -222,7 +222,7 @@ def handle_pull_requests(namespace: dict[str, Any], db: DB) -> None:
             )
 
             data.append(resp[0])
-            after_cursor = f'"{resp[1]}"'
+            after_cursor = resp[1]
             has_next_page = resp[2]
 
             bar.next()

@@ -168,7 +168,8 @@ class GitHubPullRequests:
             "pullRequests"
         ]["pageInfo"]
 
-        cursor: str = str(page_info["endCursor"])
+        # Wrap cursor in quotes
+        cursor: str = f'"{str(page_info["endCursor"])}"'
         has_next_page: bool = bool(page_info["hasNextPage"])
 
         nodes: list[dict[str, dict[str, str]]] = response.json()["data"]["repository"][
