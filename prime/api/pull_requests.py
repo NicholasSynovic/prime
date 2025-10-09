@@ -178,6 +178,13 @@ class GitHubPullRequests:
 
         pull_request_data: DataFrame = DataFrame(data=map(itemgetter("node"), nodes))
 
+        # Only keep first pull request instance based on ID
+        pull_request_data = pull_request_data.drop_duplicates(
+            subset="id",
+            keep="first",
+            ignore_index=True,
+        )
+
         pull_request_data = pull_request_data.rename(
             columns={
                 "id": "pull_request_id",
